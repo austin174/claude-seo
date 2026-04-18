@@ -173,8 +173,13 @@ main() {
         echo "  ⚠  Playwright install failed. Visual analysis will use WebFetch fallback."
     fi
 
+    # Count installed items for summary
+    seo_skills=$(find "${HOME}/.claude/skills" -maxdepth 1 -type l -lname "*claude-seo*" 2>/dev/null | wc -l | tr -d ' ')
+    seo_agents=$(find "${AGENT_DIR}" -maxdepth 1 -type l -lname "*claude-seo*" 2>/dev/null | wc -l | tr -d ' ')
+
     echo ""
     echo "✓ Claude SEO installed successfully! (symlink mode)"
+    echo "  Skills: ${seo_skills}, Agents: ${seo_agents}"
     echo ""
     echo "Usage:"
     echo "  1. Start Claude Code:  claude"
@@ -182,6 +187,7 @@ main() {
     echo ""
     echo "Repo: ${REPO_DIR}"
     echo "Python deps: ${SKILL_DIR}/requirements.txt"
+    echo "INSTALLED:${seo_skills} SKIPPED:0 AGENTS:${seo_agents}"
 }
 
 main "$@"
