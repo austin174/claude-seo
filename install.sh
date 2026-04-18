@@ -3,24 +3,35 @@ set -euo pipefail
 
 # Claude SEO Installer
 # Wraps everything in main() to prevent partial execution on network failure
+#
+# [REPHLEX] This is the Rephlex Digital fork. Changes from upstream:
+#   - Removed temp-dir git clone (installs from local repo checkout)
+#   - Changed all cp operations to symlinks (ln -sfn)
+#   - Main 'seo' skill dir stays real (venv lives inside it); contents are symlinked
+#   - All fork changes are marked with [REPHLEX] for merge conflict resolution
 
 main() {
     SKILL_DIR="${HOME}/.claude/skills/seo"
     AGENT_DIR="${HOME}/.claude/agents"
-    REPO_URL="https://github.com/AgriciDaniel/claude-seo"
-    # Pin to a specific release tag to prevent silent updates from main.
-    # Override: CLAUDE_SEO_TAG=main bash install.sh
-    REPO_TAG="${CLAUDE_SEO_TAG:-v1.9.0}"
+    # [REPHLEX] Upstream variables kept for reference but unused in fork mode:
+    # REPO_URL="https://github.com/AgriciDaniel/claude-seo"
+    # REPO_TAG="${CLAUDE_SEO_TAG:-v1.9.0}"
+
+    # [REPHLEX] Install from local repo checkout instead of cloning
+    REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 
     echo "════════════════════════════════════════"
     echo "║   Claude SEO - Installer             ║"
     echo "║   Claude Code SEO Skill              ║"
+    echo "║   [Rephlex fork — symlink mode]      ║"
     echo "════════════════════════════════════════"
+    echo ""
+    echo "Repo: ${REPO_DIR}"
     echo ""
 
     # Check prerequisites
     command -v python3 >/dev/null 2>&1 || { echo "✗ Python 3 is required but not installed."; exit 1; }
-    command -v git >/dev/null 2>&1 || { echo "✗ Git is required but not installed."; exit 1; }
+    # [REPHLEX] Removed git prerequisite check (not needed for local install)
 
     # Check Python version (3.10+ required)
     PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
@@ -35,61 +46,72 @@ main() {
     mkdir -p "${SKILL_DIR}"
     mkdir -p "${AGENT_DIR}"
 
-    # Clone or update
-    TEMP_DIR=$(mktemp -d)
-    trap "rm -rf ${TEMP_DIR}" EXIT
+    # [REPHLEX] ── BEGIN FORK CHANGES ──────────────────────────────────
+    # Upstream clones to a temp dir and copies files.
+    # This fork symlinks from the local repo checkout instead.
 
-    echo "↓ Downloading Claude SEO (${REPO_TAG})..."
-    git clone --depth 1 --branch "${REPO_TAG}" "${REPO_URL}" "${TEMP_DIR}/claude-seo" 2>/dev/null
+    # Helper: create symlink, back up existing non-symlink targets
+    symlink_item() {
+        local source="$1"
+        local target="$2"
+        local name="$3"
+        if [ -e "$target" ] && [ ! -L "$target" ]; then
+            mv "$target" "${target}.bak"
+        fi
+        ln -sfn "$source" "$target"
+        echo "  + $name"
+    }
 
-    # Copy skill files
-    echo "→ Installing skill files..."
-    cp -r "${TEMP_DIR}/claude-seo/skills/seo/"* "${SKILL_DIR}/"
+    # Main 'seo' skill — real directory with symlinked contents
+    # (can't symlink the whole dir because the Python venv lives inside it)
+    echo "→ Installing main seo skill (symlinks into real dir)..."
+    for item in "${REPO_DIR}/skills/seo/"*; do
+        [ -e "${item}" ] || continue
+        item_name=$(basename "${item}")
+        symlink_item "${item}" "${SKILL_DIR}/${item_name}" "seo/${item_name}"
+    done
 
-    # Copy sub-skills
-    if [ -d "${TEMP_DIR}/claude-seo/skills" ]; then
-        for skill_dir in "${TEMP_DIR}/claude-seo/skills"/*/; do
-            skill_name=$(basename "${skill_dir}")
-            target="${HOME}/.claude/skills/${skill_name}"
-            mkdir -p "${target}"
-            cp -r "${skill_dir}"* "${target}/"
-        done
+    # Symlink sub-skills
+    echo "→ Installing sub-skills (symlinks)..."
+    for skill_dir in "${REPO_DIR}/skills"/*/; do
+        [ -d "${skill_dir}" ] || continue
+        skill_name=$(basename "${skill_dir}")
+        [ "${skill_name}" = "seo" ] && continue
+        symlink_item "${skill_dir}" "${HOME}/.claude/skills/${skill_name}" "${skill_name}"
+    done
+
+    # Symlink schema templates into main seo skill dir
+    if [ -d "${REPO_DIR}/schema" ]; then
+        symlink_item "${REPO_DIR}/schema" "${SKILL_DIR}/schema" "seo/schema"
     fi
 
-    # Copy schema templates
-    if [ -d "${TEMP_DIR}/claude-seo/schema" ]; then
-        mkdir -p "${SKILL_DIR}/schema"
-        cp -r "${TEMP_DIR}/claude-seo/schema/"* "${SKILL_DIR}/schema/"
+    # Symlink reference docs into main seo skill dir
+    if [ -d "${REPO_DIR}/pdf" ]; then
+        symlink_item "${REPO_DIR}/pdf" "${SKILL_DIR}/pdf" "seo/pdf"
     fi
 
-    # Copy reference docs
-    if [ -d "${TEMP_DIR}/claude-seo/pdf" ]; then
-        mkdir -p "${SKILL_DIR}/pdf"
-        cp -r "${TEMP_DIR}/claude-seo/pdf/"* "${SKILL_DIR}/pdf/"
+    # Symlink agents
+    echo "→ Installing subagents (symlinks)..."
+    for agent_file in "${REPO_DIR}/agents/"*.md; do
+        [ -f "${agent_file}" ] || continue
+        agent_name=$(basename "${agent_file}")
+        symlink_item "${agent_file}" "${AGENT_DIR}/${agent_name}" "${agent_name}"
+    done
+
+    # Symlink shared scripts into main seo skill dir
+    if [ -d "${REPO_DIR}/scripts" ]; then
+        symlink_item "${REPO_DIR}/scripts" "${SKILL_DIR}/scripts" "seo/scripts"
     fi
 
-    # Copy agents
-    echo "→ Installing subagents..."
-    cp -r "${TEMP_DIR}/claude-seo/agents/"*.md "${AGENT_DIR}/" 2>/dev/null || true
-
-    # Copy shared scripts
-    if [ -d "${TEMP_DIR}/claude-seo/scripts" ]; then
-        mkdir -p "${SKILL_DIR}/scripts"
-        cp -r "${TEMP_DIR}/claude-seo/scripts/"* "${SKILL_DIR}/scripts/"
+    # Symlink hooks into main seo skill dir
+    if [ -d "${REPO_DIR}/hooks" ]; then
+        symlink_item "${REPO_DIR}/hooks" "${SKILL_DIR}/hooks" "seo/hooks"
     fi
 
-    # Copy hooks
-    if [ -d "${TEMP_DIR}/claude-seo/hooks" ]; then
-        mkdir -p "${SKILL_DIR}/hooks"
-        cp -r "${TEMP_DIR}/claude-seo/hooks/"* "${SKILL_DIR}/hooks/"
-        chmod +x "${SKILL_DIR}/hooks/"*.sh 2>/dev/null || true
-        chmod +x "${SKILL_DIR}/hooks/"*.py 2>/dev/null || true
-    fi
-
-    # Copy extensions (optional add-ons: dataforseo, banana)
-    if [ -d "${TEMP_DIR}/claude-seo/extensions" ]; then
-        echo "=> Installing extensions..."
-        for ext_dir in "${TEMP_DIR}/claude-seo/extensions"/*/; do
+    # Symlink extensions (optional add-ons: dataforseo, banana, firecrawl)
+    if [ -d "${REPO_DIR}/extensions" ]; then
+        echo "→ Installing extensions (symlinks)..."
+        for ext_dir in "${REPO_DIR}/extensions"/*/; do
             [ -d "${ext_dir}" ] || continue
             ext_name=$(basename "${ext_dir}")
             # Extension skills
@@ -97,40 +119,47 @@ main() {
                 for ext_skill in "${ext_dir}skills"/*/; do
                     [ -d "${ext_skill}" ] || continue
                     ext_skill_name=$(basename "${ext_skill}")
-                    target="${HOME}/.claude/skills/${ext_skill_name}"
-                    mkdir -p "${target}"
-                    cp -r "${ext_skill}"* "${target}/"
+                    symlink_item "${ext_skill}" "${HOME}/.claude/skills/${ext_skill_name}" "${ext_skill_name} (ext: ${ext_name})"
                 done
             fi
             # Extension agents
             if [ -d "${ext_dir}agents" ]; then
-                cp -r "${ext_dir}agents/"*.md "${AGENT_DIR}/" 2>/dev/null || true
+                for agent_file in "${ext_dir}agents/"*.md; do
+                    [ -f "${agent_file}" ] || continue
+                    agent_name=$(basename "${agent_file}")
+                    symlink_item "${agent_file}" "${AGENT_DIR}/${agent_name}" "${agent_name} (ext: ${ext_name})"
+                done
             fi
             # Extension references
             if [ -d "${ext_dir}references" ]; then
-                mkdir -p "${SKILL_DIR}/extensions/${ext_name}/references"
-                cp -r "${ext_dir}references/"* "${SKILL_DIR}/extensions/${ext_name}/references/"
+                mkdir -p "${SKILL_DIR}/extensions/${ext_name}"
+                symlink_item "${ext_dir}references" "${SKILL_DIR}/extensions/${ext_name}/references" "ext/${ext_name}/references"
             fi
             # Extension scripts
             if [ -d "${ext_dir}scripts" ]; then
-                mkdir -p "${SKILL_DIR}/extensions/${ext_name}/scripts"
-                cp -r "${ext_dir}scripts/"* "${SKILL_DIR}/extensions/${ext_name}/scripts/"
+                mkdir -p "${SKILL_DIR}/extensions/${ext_name}"
+                symlink_item "${ext_dir}scripts" "${SKILL_DIR}/extensions/${ext_name}/scripts" "ext/${ext_name}/scripts"
             fi
         done
     fi
 
-    # Copy requirements.txt to skill dir so users can retry later
-    cp "${TEMP_DIR}/claude-seo/requirements.txt" "${SKILL_DIR}/requirements.txt" 2>/dev/null || true
+    # Symlink requirements.txt to skill dir so users can retry later
+    symlink_item "${REPO_DIR}/requirements.txt" "${SKILL_DIR}/requirements.txt" "requirements.txt"
+
+    # [REPHLEX] ── END FORK CHANGES ────────────────────────────────────
 
     # Install Python dependencies (venv preferred, --user fallback)
     echo "→ Installing Python dependencies..."
     VENV_DIR="${SKILL_DIR}/.venv"
-    if python3 -m venv "${VENV_DIR}" 2>/dev/null; then
-        "${VENV_DIR}/bin/pip" install --quiet -r "${TEMP_DIR}/claude-seo/requirements.txt" 2>/dev/null && \
+    if [ -d "${VENV_DIR}" ] && [ -f "${VENV_DIR}/bin/python" ]; then
+        echo "  ✓ Venv already exists at ${VENV_DIR} — skipping creation"
+    elif python3 -m venv "${VENV_DIR}" 2>/dev/null; then
+        # [REPHLEX] Use REPO_DIR path (requirements.txt symlink also works)
+        "${VENV_DIR}/bin/pip" install --quiet -r "${REPO_DIR}/requirements.txt" 2>/dev/null && \
             echo "  ✓ Installed in venv at ${VENV_DIR}" || \
             echo "  ⚠  Venv pip install failed. Run: ${VENV_DIR}/bin/pip install -r ${SKILL_DIR}/requirements.txt"
     else
-        pip install --quiet --user -r "${TEMP_DIR}/claude-seo/requirements.txt" 2>/dev/null || \
+        pip install --quiet --user -r "${REPO_DIR}/requirements.txt" 2>/dev/null || \
         echo "  ⚠  Could not auto-install. Run: pip install --user -r ${SKILL_DIR}/requirements.txt"
     fi
 
@@ -145,14 +174,14 @@ main() {
     fi
 
     echo ""
-    echo "✓ Claude SEO installed successfully!"
+    echo "✓ Claude SEO installed successfully! (symlink mode)"
     echo ""
     echo "Usage:"
     echo "  1. Start Claude Code:  claude"
     echo "  2. Run commands:       /seo audit https://example.com"
     echo ""
-    echo "Python deps location: ${SKILL_DIR}/requirements.txt"
-    echo "To uninstall: curl -fsSL ${REPO_URL}/raw/main/uninstall.sh | bash"
+    echo "Repo: ${REPO_DIR}"
+    echo "Python deps: ${SKILL_DIR}/requirements.txt"
 }
 
 main "$@"
