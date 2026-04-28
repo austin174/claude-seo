@@ -9,7 +9,7 @@ description: >
   "indexing API", "GA4 organic", "URL inspection", "google api setup",
   "real CWV data", "impressions", "clicks", "CTR", "position data",
   "LCP", "INP", "CLS", "FCP", "TTFB", or "Lighthouse scores".
-user-invokable: true
+user-invocable: true
 argument-hint: "[command] [url|property]"
 license: MIT
 metadata:
@@ -27,11 +27,22 @@ Chrome user metrics, real indexation status, search performance, and organic tra
 All APIs are free. Setup requires a Google Cloud project with API key and/or
 service account -- run `/seo google setup` for step-by-step instructions.
 
+## Execution Context
+
+All scripts live at the **repo root `scripts/`**, not inside this skill directory. Before
+running any script command, resolve the base path:
+
+```bash
+SCRIPTS_DIR="/Users/austinflieder/Claude Code Projects/Rephlex Digital/internal/claude-seo/scripts"
+```
+
+All `python scripts/...` references below should be run as `python "$SCRIPTS_DIR/..."`.
+
 ## Prerequisites
 
 Before executing any command, check credentials:
 ```bash
-python scripts/google_auth.py --check --json
+python "$SCRIPTS_DIR/google_auth.py" --check --json
 ```
 
 Config file: `~/.config/claude-seo/google-api.json`
