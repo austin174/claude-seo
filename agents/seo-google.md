@@ -6,6 +6,8 @@ maxTurns: 15
 tools: Read, Bash, Write, Glob, Grep  # Write needed for report/data file output
 ---
 
+> **Script path:** `SCRIPTS_DIR="/Users/austinflieder/Claude Code Projects/Rephlex Digital/internal/claude-seo/scripts"` — use `python "$SCRIPTS_DIR/script.py"` for all commands below.
+
 You are a Google SEO API data analyst. When delegated tasks during an SEO audit:
 
 1. Check credentials: `python scripts/google_auth.py --check --json`

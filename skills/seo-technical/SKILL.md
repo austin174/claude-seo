@@ -5,7 +5,7 @@ description: >
   URL structure, mobile, Core Web Vitals, structured data, JavaScript rendering,
   and IndexNow protocol. Use when user says "technical SEO", "crawl issues",
   "robots.txt", "Core Web Vitals", "site speed", or "security headers".
-user-invokable: true
+user-invocable: true
 argument-hint: "[url]"
 license: MIT
 metadata:
@@ -15,6 +15,14 @@ metadata:
 ---
 
 # Technical SEO Audit
+
+## Script Path
+
+All scripts live at the repo root — not inside this skill directory:
+```bash
+SCRIPTS_DIR="/Users/austinflieder/Claude Code Projects/Rephlex Digital/internal/claude-seo/scripts"
+```
+Use `python "$SCRIPTS_DIR/script_name.py"` for all commands below.
 
 ## Categories
 

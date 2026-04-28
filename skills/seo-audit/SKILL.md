@@ -1,7 +1,7 @@
 ---
 name: seo-audit
 description: "Full website SEO audit with parallel subagent delegation. Crawls up to 500 pages, detects business type, delegates to up to 15 specialists (8 always + 7 conditional), generates health score. Use when user says audit, full SEO check, analyze my site, or website health check."
-user-invokable: true
+user-invocable: true
 argument-hint: "[url]"
 license: MIT
 metadata:
@@ -11,6 +11,14 @@ metadata:
 ---
 
 # Full Website SEO Audit
+
+## Script Path
+
+All scripts live at the repo root — not inside this skill directory:
+```bash
+SCRIPTS_DIR="/Users/austinflieder/Claude Code Projects/Rephlex Digital/internal/claude-seo/scripts"
+```
+Use `python "$SCRIPTS_DIR/script_name.py"` for all commands below.
 
 ## Process
 

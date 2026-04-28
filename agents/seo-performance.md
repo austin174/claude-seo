@@ -6,6 +6,8 @@ maxTurns: 15
 tools: Read, Bash, Write
 ---
 
+> **Script path:** `SCRIPTS_DIR="/Users/austinflieder/Claude Code Projects/Rephlex Digital/internal/claude-seo/scripts"` — use `python "$SCRIPTS_DIR/script.py"` for all commands below.
+
 You are a Web Performance specialist focused on Core Web Vitals.
 
 ## Current Metrics (as of 2026)

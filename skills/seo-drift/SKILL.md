@@ -6,7 +6,7 @@ description: >
   to your on-page SEO. Use when user says "SEO drift", "baseline", "track changes",
   "did anything break", "SEO regression", "compare SEO", "before and after",
   "monitor SEO changes", or "deployment check".
-user-invokable: true
+user-invocable: true
 argument-hint: "baseline|compare|history <url>"
 license: MIT
 metadata:
@@ -19,6 +19,14 @@ metadata:
 # SEO Drift Monitor (April 2026)
 
 Git for your SEO. Capture baselines, detect regressions, track changes over time.
+
+## Script Path
+
+All scripts live at the repo root — not inside this skill directory:
+```bash
+SCRIPTS_DIR="/Users/austinflieder/Claude Code Projects/Rephlex Digital/internal/claude-seo/scripts"
+```
+Use `python "$SCRIPTS_DIR/script_name.py"` for all commands below.
 
 ---
 

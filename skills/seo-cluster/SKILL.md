@@ -8,7 +8,7 @@ description: >
   Use when user says "topic cluster", "content cluster", "semantic clustering",
   "pillar page", "hub and spoke", "content architecture", "keyword grouping",
   or "cluster plan".
-user-invokable: true
+user-invocable: true
 argument-hint: "<seed-keyword or url>"
 license: MIT
 metadata:
@@ -25,7 +25,7 @@ by how Google actually ranks them (shared top-10 results), not by text similarit
 Designs hub-and-spoke content clusters with internal link matrices and generates
 interactive cluster map visualizations.
 
-**Scripts:** Located at the plugin root `scripts/` directory.
+**Scripts:** Located at the repo root `scripts/` directory — not inside this skill directory. Resolve: `SCRIPTS_DIR="/Users/austinflieder/Claude Code Projects/Rephlex Digital/internal/claude-seo/scripts"` and use `python "$SCRIPTS_DIR/script_name.py"`.
 
 ---
 
